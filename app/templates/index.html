@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps TP2 — INPTIC</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        /* Fond animé */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(120,40,200,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(0,180,255,0.1) 0%, transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 1; }
+
+        /* Header */
+        header {
+            padding: 2rem 0 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .header-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #7c3aed;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .logo span { color: #06b6d4; }
+        nav a {
+            color: #9ca3af;
+            text-decoration: none;
+            margin-left: 2rem;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+        nav a:hover { color: #fff; }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 5rem 0 3rem;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(124,58,237,0.2);
+            border: 1px solid rgba(124,58,237,0.4);
+            color: #a78bfa;
+            padding: 0.3rem 1rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            margin-bottom: 1.5rem;
+            letter-spacing: 1px;
+        }
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #06b6d4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            color: #9ca3af;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.7;
+        }
+
+        /* Status badge live */
+        .status-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.3);
+            color: #10b981;
+            padding: 0.4rem 1.2rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+        }
+        .dot {
+            width: 8px; height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.3); }
+        }
+
+        /* Stats en temps réel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(124,58,237,0.4);
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.3rem;
+        }
+        .stat-value.loading { color: #4b5563; }
+        .stat-label { font-size: 0.8rem; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+
+        /* Services grid */
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #fff;
+        }
+        .section-title span { color: #7c3aed; }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+        .service-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s;
+            display: block;
+        }
+        .service-card:hover {
+            background: rgba(255,255,255,0.06);
+            border-color: rgba(124,58,237,0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .service-header {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+        .service-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .service-name { font-weight: 600; font-size: 1rem; }
+        .service-port { font-size: 0.75rem; color: #6b7280; font-family: monospace; }
+        .service-desc { font-size: 0.85rem; color: #9ca3af; line-height: 1.5; }
+        .service-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.75rem;
+            margin-top: 0.8rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+        }
+        .status-up { background: rgba(16,185,129,0.1); color: #10b981; }
+        .status-check { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+        /* Stack technique */
+        .stack-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-bottom: 3rem;
+        }
+        .tag {
+            background: rgba(124,58,237,0.15);
+            border: 1px solid rgba(124,58,237,0.3);
+            color: #a78bfa;
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+        .tag.blue { background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #06b6d4; }
+        .tag.green { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #10b981; }
+        .tag.orange { background: rgba(251,146,60,0.1); border-color: rgba(251,146,60,0.3); color: #fb923c; }
+
+        /* API tester */
+        .api-tester {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+        }
+        .api-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        .api-btn {
+            background: rgba(124,58,237,0.2);
+            border: 1px solid rgba(124,58,237,0.4);
+            color: #a78bfa;
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: monospace;
+            transition: all 0.2s;
+        }
+        .api-btn:hover { background: rgba(124,58,237,0.4); color: #fff; }
+        .api-btn.get { background: rgba(6,182,212,0.1); border-color: rgba(6,182,212,0.3); color: #06b6d4; }
+        .api-btn.get:hover { background: rgba(6,182,212,0.3); }
+        .api-response {
+            background: #0a0a14;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.82rem;
+            color: #10b981;
+            min-height: 80px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 2rem 0;
+            text-align: center;
+            color: #4b5563;
+            font-size: 0.85rem;
+        }
+        footer span { color: #7c3aed; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="container">
+        <div class="header-inner">
+            <div class="logo">Dev<span>Ops</span> TP2</div>
+            <nav>
+                <a href="#services">Services</a>
+                <a href="#api">API</a>
+                <a href="http://192.168.47.10:9090" target="_blank">Prometheus</a>
+                <a href="http://192.168.47.10:3000" target="_blank">Grafana</a>
+                <a href="http://192.168.47.10:8080" target="_blank">Jenkins</a>
+            </nav>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="container">
+
+        <!-- Hero -->
+        <div class="hero">
+            <div class="badge">🎓 INPTIC · LP-DAR · 2026</div>
+            <div class="status-live">
+                <div class="dot"></div>
+                <span id="app-status-text">Vérification...</span>
+            </div>
+            <h1>Plateforme DevOps<br>Conteneurisée</h1>
+            <p class="subtitle">
+                Infrastructure complète avec CI/CD automatisé, monitoring temps réel
+                et déploiement conteneurisé sur AlmaLinux · VMware
+            </p>
+        </div>
+
+        <!-- Stats live -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">⚡</div>
+                <div class="stat-value loading" id="stat-requests">—</div>
+                <div class="stat-label">Requêtes totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-value loading" id="stat-uptime">—</div>
+                <div class="stat-label">Uptime (sec)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🐳</div>
+                <div class="stat-value" id="stat-containers">6</div>
+                <div class="stat-label">Conteneurs actifs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-value" id="stat-status">—</div>
+                <div class="stat-label">Statut API</div>
+            </div>
+        </div>
+
+        <!-- Services -->
+        <div id="services">
+            <h2 class="section-title"><span>#</span> Services déployés</h2>
+            <div class="services-grid">
+
+                <a class="service-card" href="/api/students" target="_blank">
+                    <div class="service-header">
+                        <div class="service-icon" style="background:rgba(124,58,237,0.2)">🎓</div>
+                        <div>
+                            <div class="service-name">Flask API</div>
+                            <div class="service-port">:5000 · Python 3.11 + Gunicorn</div>
+                        </div>
+                    </div>
+                    <div class="service-desc">API REST de gestion des étudiants INPTIC avec métriques Prometheus intégrées.</div>
+                    <div class="service-status status-up"><span class="dot"></span> Running</div>
+                </a>
+
+                <a class="service-card" href="http://192.168.47.10:9090" target="_blank">
+                    <div class="service-header">
+                        <div class="service-icon" style="background:rgba(251,146,60,0.2)">📊</div>
+                        <div>
+                            <div class="service-name">Prometheus</div>
+                            <div class="service-port">:9090 · Scrape 15s</div>
+                        </div>
+                    </div>
+                    <div class="service-desc">Collecte les métriques de l'API, cAdvisor et Node Exporter toutes les 15 secondes.</div>
+                    <div class="service-status status-up"><span class="dot"></span> Running</div>
+                </a>
+
+                <a class="service-card" href="http://192.168.47.10:3000" target="_blank">
+                    <div class="service-header">
+                        <div class="service-icon" style="background:rgba(251,191,36,0.2)">📈</div>
+                        <div>
+                            <div class="service-name">Grafana</div>
+                            <div class="service-port">:3000 · admin/devops2026</div>
+                        </div>
+                    </div>
+                    <div class="service-desc">Dashboards temps réel : requêtes, latence, CPU/RAM des conteneurs Docker.</div>
+                    <div class="service-status status-up"><span class="dot"></span> Running</div>
+                </a>
+
+                <a class="service-card" href="http://192.168.47.10:8080" target="_blank">
+                    <div class="service-header">
+                        <div class="service-icon" style="background:rgba(239,68,68,0.2)">🔧</div>
+                        <div>
+                            <div class="service-name">Jenkins</div>
+                            <div class="service-port">:8080 · CI/CD Pipeline</div>
+                        </div>
+                    </div>
+                    <div class="service-desc">Pipeline automatisé : Lint → Build → Test → Deploy → Rollback.</div>
+                    <div class="service-status status-up"><span class="dot"></span> Running</div>
+                </a>
+
+                <a class="service-card" href="http://192.168.47.10:8081" target="_blank">
+                    <div class="service-header">
+                        <div class="service-icon" style="background:rgba(6,182,212,0.2)">🐋</div>
+                        <div>
+                            <div class="service-name">cAdvisor</div>
+                            <div class="service-port">:8081 · Métriques conteneurs</div>
+                        </div>
+                    </div>
+                    <div class="service-desc">Supervision CPU, RAM et réseau de chaque conteneur Docker en temps réel.</div>
+                    <div class="service-status status-up"><span class="dot"></span> Running</div>
+                </a>
+
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-icon" style="background:rgba(16,185,129,0.2)">🔀</div>
+                        <div>
+                            <div class="service-name">Nginx</div>
+                            <div class="service-port">:80 · Reverse Proxy</div>
+                        </div>
+                    </div>
+                    <div class="service-desc">Reverse proxy qui route le trafic vers Flask et Grafana avec compression gzip.</div>
+                    <div class="service-status status-up"><span class="dot"></span> Running</div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Stack technique -->
+        <div>
+            <h2 class="section-title"><span>#</span> Stack technique</h2>
+            <div class="stack-grid">
+                <span class="tag">AlmaLinux 9</span>
+                <span class="tag">VMware</span>
+                <span class="tag blue">Docker 26.x</span>
+                <span class="tag blue">Docker Compose v2</span>
+                <span class="tag green">Python 3.11</span>
+                <span class="tag green">Flask 3.0</span>
+                <span class="tag green">Gunicorn 22</span>
+                <span class="tag orange">Prometheus 2.51</span>
+                <span class="tag orange">Grafana 10.4</span>
+                <span class="tag">Jenkins LTS</span>
+                <span class="tag blue">Nginx 1.25</span>
+                <span class="tag">Node Exporter</span>
+                <span class="tag">cAdvisor</span>
+                <span class="tag green">Jenkinsfile déclaratif</span>
+            </div>
+        </div>
+
+        <!-- API Tester -->
+        <div id="api">
+            <h2 class="section-title"><span>#</span> Tester l'API en direct</h2>
+            <div class="api-tester">
+                <div class="api-buttons">
+                    <button class="api-btn get" onclick="callAPI('/')">GET /</button>
+                    <button class="api-btn get" onclick="callAPI('/health')">GET /health</button>
+                    <button class="api-btn get" onclick="callAPI('/api/students')">GET /api/students</button>
+                    <button class="api-btn get" onclick="callAPI('/api/students/1')">GET /api/students/1</button>
+                    <button class="api-btn get" onclick="callAPI('/api/students?filiere=LP-DAR')">GET ?filiere=LP-DAR</button>
+                </div>
+                <div class="api-response" id="api-output">// Clique sur un endpoint ci-dessus pour voir la réponse en direct...</div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<footer>
+    <div class="container">
+        Projet DevOps TP2 · INPTIC · LP-DAR · 2026 — Développé par <span>DesmonD G</span>
+    </div>
+</footer>
+
+<script>
+    // ── Appel API ──────────────────────────────────────────────────────────────
+    async function callAPI(path) {
+        const output = document.getElementById('api-output');
+        output.style.color = '#fbbf24';
+        output.textContent = '// Chargement...';
+        try {
+            const r = await fetch(path);
+            const data = await r.json();
+            output.style.color = '#10b981';
+            output.textContent = `// ${r.status} OK — ${path}\n` + JSON.stringify(data, null, 2);
+        } catch(e) {
+            output.style.color = '#ef4444';
+            output.textContent = `// Erreur : ${e.message}`;
+        }
+    }
+
+    // ── Stats live depuis l'API ────────────────────────────────────────────────
+    async function updateStats() {
+        try {
+            const r = await fetch('/health');
+            const data = await r.json();
+
+            document.getElementById('stat-uptime').textContent =
+                Math.floor(data.uptime_seconds).toLocaleString();
+            document.getElementById('stat-uptime').classList.remove('loading');
+
+            document.getElementById('stat-status').textContent = '🟢 UP';
+            document.getElementById('stat-status').style.color = '#10b981';
+            document.getElementById('stat-status').classList.remove('loading');
+
+            document.getElementById('app-status-text').textContent = 'Tous les services opérationnels';
+        } catch(e) {
+            document.getElementById('stat-status').textContent = '🔴 DOWN';
+            document.getElementById('stat-status').style.color = '#ef4444';
+            document.getElementById('app-status-text').textContent = 'Service indisponible';
+        }
+
+        // Compteur de requêtes depuis /metrics
+        try {
+            const r = await fetch('/metrics');
+            const text = await r.text();
+            const match = text.match(/http_requests_total\{[^}]*\}\s+([\d.]+)/);
+            if (match) {
+                const total = Math.floor(parseFloat(match[1]));
+                document.getElementById('stat-requests').textContent = total.toLocaleString();
+                document.getElementById('stat-requests').classList.remove('loading');
+            }
+        } catch(e) {}
+    }
+
+    // Rafraîchir toutes les 10 secondes
+    updateStats();
+    setInterval(updateStats, 10000);
+</script>
+
+</body>
+</html>
+

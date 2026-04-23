@@ -1,0 +1,52 @@
+services:
+  app:
+    build: ./app
+    container_name: flask-app
+    ports:
+      - "5000:5000"
+    networks:
+      - devops-net
+
+  prometheus:
+    image: prom/prometheus:v3.3.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    networks:
+      - devops-net
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=devops2026
+    networks:
+      - devops-net
+
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins
+    restart: unless-stopped
+    user: root
+    environment:
+      - JAVA_OPTS=-Xmx1024m -Xms512m
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - /home/devops_os/devops-tp2:/home/devops_os/devops-tp2  # ← AJOUTE CETTE LIGNE
+    ports:
+      - "8080:8080"
+    networks:
+      - devops-net
+
+networks:
+  devops-net:
+    driver: bridge
+
+volumes:
+  jenkins_home:
