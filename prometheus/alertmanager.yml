@@ -1,0 +1,60 @@
+global:
+  resolve_timeout: 5m
+  # ── Configuration SMTP Gmail ─────────────────────────────────────────────────
+  # IMPORTANT : Utilise un "App Password" Gmail, pas ton mot de passe normal
+  # Comment créer un App Password :
+  #   Gmail → Paramètres → Sécurité → Validation en 2 étapes → Mots de passe des applis
+  smtp_smarthost:     'smtp.gmail.com:587'
+  smtp_from:          'REMPLACE_PAR_TON_GMAIL@gmail.com'
+  smtp_auth_username: 'REMPLACE_PAR_TON_GMAIL@gmail.com'
+  smtp_auth_password: 'REMPLACE_PAR_TON_APP_PASSWORD'  # 16 caractères sans espaces
+  smtp_require_tls:   true
+
+route:
+  group_by:        ['alertname', 'severity']
+  group_wait:      30s
+  group_interval:  5m
+  repeat_interval: 2h
+  receiver:        'email-alert'
+
+  # Routes par sévérité
+  routes:
+    - match:
+        severity: critical
+      receiver: email-alert
+      repeat_interval: 30m   # Renvoyer toutes les 30 min si critique
+
+    - match:
+        severity: warning
+      receiver: email-alert
+      repeat_interval: 2h
+
+receivers:
+  - name: 'email-alert'
+    email_configs:
+      - to:            'REMPLACE_PAR_TON_EMAIL_DEST@gmail.com'
+        send_resolved: true
+        headers:
+          Subject: '[DevOps TP2] {{ .Status | toUpper }} — {{ .GroupLabels.alertname }}'
+        html: |
+          <h2 style="color:{{ if eq .Status "firing" }}#e53e3e{{ else }}#38a169{{ end }}">
+            {{ if eq .Status "firing" }}🔴 ALERTE{{ else }}🟢 RÉSOLU{{ end }} — {{ .GroupLabels.alertname }}
+          </h2>
+          <p><b>Sévérité :</b> {{ .CommonLabels.severity }}</p>
+          <p><b>Heure :</b> {{ .CommonAnnotations.description }}</p>
+          <hr>
+          {{ range .Alerts }}
+          <p><b>{{ .Annotations.summary }}</b></p>
+          <p>{{ .Annotations.description }}</p>
+          <p style="color:#718096">Débuté : {{ .StartsAt.Format "02/01/2006 15:04:05" }}</p>
+          {{ end }}
+          <hr>
+          <p><a href="http://192.168.47.10/prometheus/">Voir Prometheus</a> |
+             <a href="http://192.168.47.10/grafana/">Voir Grafana</a></p>
+
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname']

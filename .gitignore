@@ -1,0 +1,8 @@
+*.log
+backups/
+logs/
+__pycache__/
+*.pyc
+.env
+alertmanager/alertmanager.yml
+grafana/
