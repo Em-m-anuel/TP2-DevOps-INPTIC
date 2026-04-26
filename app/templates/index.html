@@ -1,396 +1,163 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestion Étudiants — INPTIC</title>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { font-family:'Segoe UI',sans-serif; background:#0f0f1a; color:#e0e0e0; min-height:100vh; }
-body::before { content:''; position:fixed; top:0; left:0; width:100%; height:100%;
-  background: radial-gradient(ellipse at 20% 50%,rgba(120,40,200,.15) 0%,transparent 50%),
-              radial-gradient(ellipse at 80% 20%,rgba(0,180,255,.1) 0%,transparent 50%);
-  z-index:0; pointer-events:none; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard DevOps — INPTIC</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI',sans-serif; background:#0f0f1a; color:#e0e0e0; min-height:100vh; overflow-x:hidden; }
+        
+        /* Background Animated */
+        body::before { 
+            content:''; position:fixed; top:0; left:0; width:100%; height:100%;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(124, 58, 237, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 40%);
+            z-index:0; 
+        }
 
-.wrap { max-width:1200px; margin:0 auto; padding:0 1.5rem; position:relative; z-index:1; }
+        .wrap { max-width:1100px; margin:0 auto; padding:0 1.5rem; position:relative; z-index:1; }
+        
+        header { padding:1.5rem 0; border-bottom:1px solid rgba(255,255,255,.05); }
+        .header-inner { display:flex; justify-content:space-between; align-items:center; }
+        .logo { font-size:1.4rem; font-weight:800; color:#7c3aed; letter-spacing:1px; text-decoration:none; }
+        .logo span { color:#06b6d4; }
+        
+        nav a { color:#9ca3af; text-decoration:none; margin-left:1.5rem; font-size:.9rem; font-weight:500; transition:0.2s; }
+        nav a:hover, nav a.active { color:#fff; }
 
-/* ── Header ── */
-header { padding:1.2rem 0; border-bottom:1px solid rgba(255,255,255,.08); }
-.header-inner { display:flex; justify-content:space-between; align-items:center; }
-.logo { font-size:1.2rem; font-weight:700; color:#7c3aed; letter-spacing:2px; text-decoration:none; }
-.logo span { color:#06b6d4; }
-nav a { color:#9ca3af; text-decoration:none; margin-left:1.5rem; font-size:.9rem; transition:color .2s; }
-nav a:hover, nav a.active { color:#fff; }
-nav a.active { color:#a78bfa; }
+        .hero { padding:4rem 0 3rem; text-align:center; }
+        .hero h1 { font-size:3rem; font-weight:800; color:#fff; margin-bottom:1rem; letter-spacing:-1px; }
+        .hero p { color:#9ca3af; font-size:1.1rem; max-width:600px; margin:0 auto; line-height:1.6; }
 
-/* ── Stats ── */
-.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:.8rem; margin:1.5rem 0; }
-.stat { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
-        border-radius:12px; padding:1.2rem; text-align:center; }
-.stat-val { font-size:1.8rem; font-weight:700; color:#fff; }
-.stat-val.green { color:#10b981; }
-.stat-val.yellow { color:#fbbf24; }
-.stat-val.red { color:#ef4444; }
-.stat-val.purple { color:#a78bfa; }
-.stat-lbl { font-size:.75rem; color:#6b7280; text-transform:uppercase; letter-spacing:1px; margin-top:.3rem; }
+        /* Grid Services */
+        .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem; margin-top:2rem; }
+        
+        .card { 
+            background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); 
+            border-radius:20px; padding:2rem; transition:all 0.3s ease;
+            display:flex; flex-direction:column; justify-content:space-between;
+        }
+        .card:hover { transform:translateY(-5px); background:rgba(255,255,255,.05); border-color:rgba(124,58,237,.3); }
+        
+        .card-icon { font-size:2.5rem; margin-bottom:1rem; }
+        .card-title { font-size:1.3rem; font-weight:700; color:#fff; margin-bottom:.5rem; }
+        .card-desc { color:#9ca3af; font-size:.9rem; line-height:1.5; margin-bottom:1.5rem; }
+        
+        .btn-link { 
+            display:inline-flex; align-items:center; justify-content:center;
+            padding:.7rem 1.2rem; background:rgba(124,58,237,.1); color:#a78bfa;
+            text-decoration:none; border-radius:10px; font-weight:600; font-size:.9rem;
+            border:1px solid rgba(124,58,237,0.2); transition:0.2s;
+        }
+        .btn-link:hover { background:#7c3aed; color:#fff; }
 
-/* ── Form ── */
-.card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);
-        border-radius:16px; padding:1.5rem; margin-bottom:1.5rem; }
-.card-title { font-size:1.1rem; font-weight:600; color:#fff; margin-bottom:1.2rem;
-              display:flex; align-items:center; gap:.5rem; }
-.form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.8rem; }
-.form-group { display:flex; flex-direction:column; gap:.4rem; }
-.form-group label { font-size:.8rem; color:#9ca3af; text-transform:uppercase; letter-spacing:.5px; }
-.form-group input, .form-group select {
-  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-  border-radius:8px; padding:.55rem .9rem; color:#fff; font-size:.9rem; outline:none;
-  transition:border-color .2s; }
-.form-group input:focus, .form-group select:focus { border-color:#7c3aed; }
-.form-group select option { background:#1a1a2e; }
-.btn { padding:.55rem 1.4rem; border-radius:8px; font-size:.9rem; font-weight:600;
-       cursor:pointer; border:none; transition:all .2s; }
-.btn-primary { background:#7c3aed; color:#fff; }
-.btn-primary:hover { background:#6d28d9; transform:translateY(-1px); }
-.btn-sm { padding:.3rem .8rem; font-size:.8rem; border-radius:6px; border:none; cursor:pointer; font-weight:500; }
-.btn-edit { background:rgba(6,182,212,.15); color:#06b6d4; }
-.btn-edit:hover { background:rgba(6,182,212,.3); }
-.btn-save { background:rgba(16,185,129,.15); color:#10b981; }
-.btn-save:hover { background:rgba(16,185,129,.3); }
-.btn-cancel { background:rgba(107,114,128,.15); color:#9ca3af; }
-.btn-cancel:hover { background:rgba(107,114,128,.3); }
-.btn-delete { background:rgba(239,68,68,.15); color:#ef4444; }
-.btn-delete:hover { background:rgba(239,68,68,.3); }
-
-/* ── Filters ── */
-.filters { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; align-items:center; }
-.filter-btn { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
-              color:#9ca3af; padding:.3rem .9rem; border-radius:999px; font-size:.82rem;
-              cursor:pointer; transition:all .2s; }
-.filter-btn:hover, .filter-btn.active { background:rgba(124,58,237,.25);
-  border-color:rgba(124,58,237,.5); color:#a78bfa; }
-.search-input { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-                border-radius:8px; padding:.35rem .8rem; color:#fff; font-size:.85rem;
-                outline:none; margin-left:auto; }
-.search-input:focus { border-color:#7c3aed; }
-
-/* ── Table ── */
-.table-wrap { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; }
-thead tr { background:rgba(255,255,255,.04); }
-th { padding:.7rem 1rem; text-align:left; font-size:.75rem; color:#6b7280;
-     text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid rgba(255,255,255,.06); }
-tbody tr { border-bottom:1px solid rgba(255,255,255,.04); transition:background .15s; }
-tbody tr:hover { background:rgba(255,255,255,.03); }
-td { padding:.7rem 1rem; font-size:.88rem; }
-td.actions { display:flex; gap:.4rem; }
-.note-badge { display:inline-block; padding:.2rem .6rem; border-radius:6px;
-              font-weight:600; font-size:.85rem; }
-.note-high   { background:rgba(16,185,129,.15); color:#10b981; }
-.note-mid    { background:rgba(251,191,36,.15);  color:#fbbf24; }
-.note-low    { background:rgba(239,68,68,.15);   color:#ef4444; }
-.filiere-badge { display:inline-block; padding:.15rem .5rem; border-radius:4px;
-                 font-size:.75rem; background:rgba(124,58,237,.15); color:#a78bfa; }
-.edit-input { background:rgba(255,255,255,.08); border:1px solid #7c3aed;
-              border-radius:6px; padding:.25rem .5rem; color:#fff; font-size:.85rem;
-              width:80px; outline:none; }
-
-/* ── Toast ── */
-.toast { position:fixed; bottom:1.5rem; right:1.5rem; padding:.8rem 1.4rem;
-         border-radius:10px; font-size:.88rem; font-weight:500; z-index:1000;
-         transform:translateY(100px); opacity:0; transition:all .3s; }
-.toast.show { transform:translateY(0); opacity:1; }
-.toast.success { background:#065f46; border:1px solid #10b981; color:#6ee7b7; }
-.toast.error   { background:#7f1d1d; border:1px solid #ef4444; color:#fca5a5; }
-
-/* ── Empty state ── */
-.empty { text-align:center; padding:3rem; color:#4b5563; }
-.empty-icon { font-size:3rem; margin-bottom:.8rem; }
-
-/* ── Grafana button ── */
-.grafana-btn { display:inline-flex; align-items:center; gap:.5rem;
-               background:rgba(251,191,36,.1); border:1px solid rgba(251,191,36,.3);
-               color:#fbbf24; padding:.4rem 1rem; border-radius:8px; text-decoration:none;
-               font-size:.85rem; transition:all .2s; }
-.grafana-btn:hover { background:rgba(251,191,36,.2); }
-</style>
+        /* Status Bar */
+        .status-bar { 
+            margin-top:3rem; background:rgba(16, 185, 129, 0.05); 
+            border:1px solid rgba(16, 185, 129, 0.2); border-radius:12px; 
+            padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center;
+        }
+        .status-info { display:flex; align-items:center; gap:1rem; font-size:.9rem; }
+        .dot { width:10px; height:10px; background:#10b981; border-radius:50%; box-shadow:0 0 10px #10b981; }
+        
+        footer { margin-top:5rem; padding:2rem 0; border-top:1px solid rgba(255,255,255,.05); text-align:center; color:#4b5563; font-size:.8rem; }
+    </style>
 </head>
 <body>
 
 <header>
-  <div class="wrap">
-    <div class="header-inner">
-      <a href="/" class="logo">Dev<span>Ops</span> TP2</a>
-      <nav>
-        <a href="/">Accueil</a>
-        <a href="/students" class="active">Étudiants</a>
-        <a href="/prometheus/">Prometheus</a>
-        <a href="/grafana/">Grafana</a>
-        <a href="/jenkins/">Jenkins</a>
-      </nav>
+    <div class="wrap">
+        <div class="header-inner">
+            <a href="/" class="logo">INPTIC<span>.DevOps</span></a>
+            <nav>
+                <a href="/" class="active">Accueil</a>
+                <a href="/students">Gestion Étudiants</a>
+            </nav>
+        </div>
     </div>
-  </div>
 </header>
 
-<main>
-  <div class="wrap" style="padding-top:1.5rem; padding-bottom:3rem;">
+<main class="wrap">
+    <section class="hero">
+        <h1>Plateforme Monitoring</h1>
+        <p>Projet de fin de TP : Supervision, CI/CD et Gestion de données. Déployé avec Docker, orchestré par Jenkins.</p>
+    </section>
 
-    <!-- Title row -->
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
-      <div>
-        <h1 style="font-size:1.6rem; font-weight:700; color:#fff;">Gestion des étudiants</h1>
-        <p style="color:#6b7280; font-size:.85rem; margin-top:.2rem;">INPTIC · LP-DAR 2026</p>
-      </div>
-      <a href="/grafana/" target="_blank" class="grafana-btn">📈 Voir dans Grafana</a>
+    <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-icon">🎓</div>
+                <div class="card-title">Gestion Étudiants</div>
+                <div class="card-desc">Interface CRUD complète pour gérer la liste des étudiants, importer des fichiers CSV/Excel et exporter les résultats.</div>
+            </div>
+            <a href="/students" class="btn-link">Ouvrir l'application</a>
+        </div>
+
+        <div class="card">
+            <div>
+                <div class="card-icon">🔥</div>
+                <div class="card-title">Prometheus</div>
+                <div class="card-desc">Collecte des métriques système et applicatives en temps réel via le endpoint /metrics de l'API Flask.</div>
+            </div>
+            <a href="/prometheus/" class="btn-link">Consulter les Metrics</a>
+        </div>
+
+        <div class="card">
+            <div>
+                <div class="card-icon">📊</div>
+                <div class="card-title">Grafana Dashboards</div>
+                <div class="card-desc">Visualisation avancée des données : taux de réussite, latence des requêtes et statistiques par filière.</div>
+            </div>
+            <a href="/grafana/" class="btn-link">Voir les Dashboards</a>
+        </div>
+        
+        <div class="card">
+            <div>
+                <div class="card-icon">🏗️</div>
+                <div class="card-title">Jenkins CI/CD</div>
+                <div class="card-desc">Automatisation du build, des tests et du déploiement continu via Webhooks GitHub.</div>
+            </div>
+            <a href="/jenkins/" class="btn-link">Pipeline Status</a>
+        </div>
     </div>
 
-    <!-- Stats -->
-    <div class="stats" id="stats-bar">
-      <div class="stat"><div class="stat-val purple" id="s-total">—</div><div class="stat-lbl">Total étudiants</div></div>
-      <div class="stat"><div class="stat-val yellow" id="s-avg">—</div><div class="stat-lbl">Moyenne générale</div></div>
-      <div class="stat"><div class="stat-val green"  id="s-max">—</div><div class="stat-lbl">Note maximale</div></div>
-      <div class="stat"><div class="stat-val red"    id="s-min">—</div><div class="stat-lbl">Note minimale</div></div>
-      <div class="stat"><div class="stat-val green"  id="s-above">—</div><div class="stat-lbl">≥ 10 / 20</div></div>
+    <div class="status-bar">
+        <div class="status-info">
+            <div class="dot" id="health-dot"></div>
+            <span id="health-text">Système en ligne</span>
+        </div>
+        <div style="font-size:.8rem; color:#6b7280;">
+            Uptime: <span id="uptime-val">0</span>s | Étudiants: <span id="count-val">0</span>
+        </div>
     </div>
-
-    <!-- Add form -->
-    <div class="card">
-      <div class="card-title">➕ Ajouter un étudiant</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Nom</label>
-          <input type="text" id="f-nom" placeholder="Ex: Diallo">
-        </div>
-        <div class="form-group">
-          <label>Prénom</label>
-          <input type="text" id="f-prenom" placeholder="Ex: Mamadou">
-        </div>
-        <div class="form-group">
-          <label>Filière</label>
-          <select id="f-filiere">
-            <option value="LP-DAR">LP-DAR</option>
-            <option value="LP-INFO">LP-INFO</option>
-            <option value="LP-SE">LP-SE</option>
-            <option value="LP-RESEAU">LP-RESEAU</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Note / 20</label>
-          <input type="number" id="f-note" placeholder="0.0" min="0" max="20" step="0.5">
-        </div>
-        <div class="form-group" style="justify-content:flex-end;">
-          <label>&nbsp;</label>
-          <button class="btn btn-primary" onclick="addStudent()">Ajouter</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Table -->
-    <div class="card">
-      <div class="card-title" style="justify-content:space-between;">
-        <span>📋 Liste des étudiants</span>
-        <div style="display:flex; gap:.5rem; align-items:center;">
-          <div class="filters">
-            <button class="filter-btn active" onclick="setFilter('all', this)">Tous</button>
-            <button class="filter-btn" onclick="setFilter('LP-DAR', this)">LP-DAR</button>
-            <button class="filter-btn" onclick="setFilter('LP-INFO', this)">LP-INFO</button>
-            <button class="filter-btn" onclick="setFilter('LP-SE', this)">LP-SE</button>
-          </div>
-          <input class="search-input" id="search" placeholder="🔍 Rechercher..." oninput="renderTable()">
-        </div>
-      </div>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Nom</th>
-              <th>Prénom</th>
-              <th>Filière</th>
-              <th>Note</th>
-              <th>Ajouté le</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="table-body">
-            <tr><td colspan="7"><div class="empty"><div class="empty-icon">⏳</div>Chargement...</div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </div>
 </main>
 
-<!-- Toast -->
-<div class="toast" id="toast"></div>
+<footer>
+    &copy; 2026 INPTIC — Travaux Pratiques DevOps — LP-DAR
+</footer>
 
 <script>
-let allStudents = [];
-let currentFilter = 'all';
+    async function checkHealth() {
+        try {
+            const r = await fetch('/health');
+            const d = await r.json();
+            document.getElementById('uptime-val').textContent = Math.floor(d.uptime_seconds);
+            document.getElementById('count-val').textContent = d.students_count;
+            document.getElementById('health-dot').style.background = '#10b981';
+            document.getElementById('health-dot').style.boxShadow = '0 0 10px #10b981';
+            document.getElementById('health-text').textContent = "Système opérationnel";
+        } catch(e) {
+            document.getElementById('health-dot').style.background = '#ef4444';
+            document.getElementById('health-dot').style.boxShadow = '0 0 10px #ef4444';
+            document.getElementById('health-text').textContent = "Erreur de connexion API";
+        }
+    }
 
-// ── Fetch students ────────────────────────────────────────────────────────────
-async function loadStudents() {
-  try {
-    const r = await fetch('/api/students');
-    const data = await r.json();
-    allStudents = data.students;
-    renderTable();
-    loadStats();
-  } catch(e) { showToast('Erreur chargement', 'error'); }
-}
-
-async function loadStats() {
-  try {
-    const r = await fetch('/api/stats');
-    const d = await r.json();
-    document.getElementById('s-total').textContent = d.total;
-    document.getElementById('s-avg').textContent   = d.moyenne ? d.moyenne.toFixed(1) : '—';
-    document.getElementById('s-max').textContent   = d.max     || '—';
-    document.getElementById('s-min').textContent   = d.min     || '—';
-    document.getElementById('s-above').textContent = d.above_average;
-  } catch(e) {}
-}
-
-// ── Render table ──────────────────────────────────────────────────────────────
-function renderTable() {
-  const search = document.getElementById('search').value.toLowerCase();
-  let rows = allStudents.filter(s => {
-    const matchFilter = currentFilter === 'all' || s.filiere === currentFilter;
-    const matchSearch = !search ||
-      s.nom.toLowerCase().includes(search) ||
-      s.prenom.toLowerCase().includes(search);
-    return matchFilter && matchSearch;
-  });
-
-  const tbody = document.getElementById('table-body');
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🎓</div>Aucun étudiant trouvé</div></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = rows.map(s => {
-    const noteClass = s.note >= 14 ? 'note-high' : s.note >= 10 ? 'note-mid' : 'note-low';
-    const date = new Date(s.created_at).toLocaleDateString('fr-FR');
-    return `
-      <tr id="row-${s.id}">
-        <td style="color:#4b5563">${s.id}</td>
-        <td style="font-weight:500">${s.nom}</td>
-        <td>${s.prenom}</td>
-        <td><span class="filiere-badge">${s.filiere}</span></td>
-        <td>
-          <span class="note-badge ${noteClass}" id="note-display-${s.id}">${s.note}/20</span>
-          <input type="number" class="edit-input" id="note-input-${s.id}"
-                 style="display:none" value="${s.note}" min="0" max="20" step="0.5">
-        </td>
-        <td style="color:#6b7280; font-size:.8rem">${date}</td>
-        <td class="actions">
-          <button class="btn-sm btn-edit" id="btn-edit-${s.id}" onclick="editNote(${s.id})">✏️ Note</button>
-          <button class="btn-sm btn-save" id="btn-save-${s.id}" style="display:none" onclick="saveNote(${s.id})">💾</button>
-          <button class="btn-sm btn-cancel" id="btn-cancel-${s.id}" style="display:none" onclick="cancelEdit(${s.id})">✕</button>
-          <button class="btn-sm btn-delete" onclick="deleteStudent(${s.id}, '${s.prenom} ${s.nom}')">🗑️</button>
-        </td>
-      </tr>`;
-  }).join('');
-}
-
-// ── Filter ────────────────────────────────────────────────────────────────────
-function setFilter(f, btn) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderTable();
-}
-
-// ── Add ───────────────────────────────────────────────────────────────────────
-async function addStudent() {
-  const nom     = document.getElementById('f-nom').value.trim();
-  const prenom  = document.getElementById('f-prenom').value.trim();
-  const filiere = document.getElementById('f-filiere').value;
-  const note    = parseFloat(document.getElementById('f-note').value) || 0;
-
-  if (!nom || !prenom) { showToast('Nom et prénom requis', 'error'); return; }
-
-  try {
-    const r = await fetch('/api/students', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({nom, prenom, filiere, note})
-    });
-    if (!r.ok) throw new Error();
-    showToast(`✅ ${prenom} ${nom} ajouté`, 'success');
-    document.getElementById('f-nom').value = '';
-    document.getElementById('f-prenom').value = '';
-    document.getElementById('f-note').value = '';
-    loadStudents();
-  } catch(e) { showToast('Erreur lors de l\'ajout', 'error'); }
-}
-
-// ── Edit note inline ──────────────────────────────────────────────────────────
-function editNote(id) {
-  document.getElementById(`note-display-${id}`).style.display = 'none';
-  document.getElementById(`note-input-${id}`).style.display   = 'inline';
-  document.getElementById(`btn-edit-${id}`).style.display     = 'none';
-  document.getElementById(`btn-save-${id}`).style.display     = 'inline';
-  document.getElementById(`btn-cancel-${id}`).style.display   = 'inline';
-  document.getElementById(`note-input-${id}`).focus();
-}
-
-function cancelEdit(id) {
-  document.getElementById(`note-display-${id}`).style.display = 'inline';
-  document.getElementById(`note-input-${id}`).style.display   = 'none';
-  document.getElementById(`btn-edit-${id}`).style.display     = 'inline';
-  document.getElementById(`btn-save-${id}`).style.display     = 'none';
-  document.getElementById(`btn-cancel-${id}`).style.display   = 'none';
-}
-
-async function saveNote(id) {
-  const note = parseFloat(document.getElementById(`note-input-${id}`).value);
-  if (isNaN(note) || note < 0 || note > 20) {
-    showToast('Note entre 0 et 20', 'error'); return;
-  }
-  try {
-    const r = await fetch(`/api/students/${id}`, {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({note})
-    });
-    if (!r.ok) throw new Error();
-    showToast('✅ Note mise à jour', 'success');
-    loadStudents();
-  } catch(e) { showToast('Erreur mise à jour', 'error'); }
-}
-
-// ── Delete ────────────────────────────────────────────────────────────────────
-async function deleteStudent(id, name) {
-  if (!confirm(`Supprimer ${name} ?`)) return;
-  try {
-    const r = await fetch(`/api/students/${id}`, {method: 'DELETE'});
-    if (!r.ok) throw new Error();
-    showToast(`🗑️ ${name} supprimé`, 'success');
-    loadStudents();
-  } catch(e) { showToast('Erreur suppression', 'error'); }
-}
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function showToast(msg, type='success') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast ${type} show`;
-  setTimeout(() => t.className = 'toast', 3000);
-}
-
-// ── Enter key on form ─────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  ['f-nom','f-prenom','f-note'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => {
-      if (e.key === 'Enter') addStudent();
-    });
-  });
-  loadStudents();
-  setInterval(loadStats, 15000);
-});
+    setInterval(checkHealth, 5000);
+    checkHealth();
 </script>
+
 </body>
 </html>

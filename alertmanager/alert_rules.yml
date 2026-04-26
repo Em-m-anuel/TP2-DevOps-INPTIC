@@ -1,0 +1,130 @@
+groups:
+  - name: service_alerts
+    rules:
+      - alert: AppDown
+        expr: up{job="flask-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application Flask HORS LIGNE"
+          description: "L'application est DOWN depuis plus d'1 minute."
+
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus HORS LIGNE"
+          description: "Prometheus est DOWN depuis 2 minutes."
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana HORS LIGNE"
+          description: "Grafana est inaccessible depuis 2 minutes."
+
+      - alert: HighErrorRate
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m])
+          / rate(http_requests_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Taux d'erreurs HTTP > 10%"
+          description: "Plus de 10% des requêtes retournent une erreur 5xx."
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_request_duration_seconds_bucket[5m])
+          ) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latence p95 elevee (>500ms)"
+          description: "Le 95e percentile de latence depasse 500ms."
+
+  - name: student_alerts
+    rules:
+      - alert: StudentAdded
+        expr: increase(student_operations_total{operation="create"}[2m]) > 0
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "Nouvel etudiant ajoute"
+          description: "{{ $value }} etudiant(s) ajoute(s) dans les 2 dernieres minutes. Total : {{ query \"students_total\" | first | value }} etudiants."
+
+      - alert: StudentDeleted
+        expr: increase(student_operations_total{operation="delete"}[2m]) > 0
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "Etudiant supprime"
+          description: "{{ $value }} etudiant(s) supprime(s) dans les 2 dernieres minutes."
+
+      - alert: StudentGradeUpdated
+        expr: increase(student_operations_total{operation="update"}[2m]) > 0
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "Note(s) modifiee(s)"
+          description: "{{ $value }} modification(s) de notes en 2 minutes. Moyenne actuelle : {{ query \"students_average_grade\" | first | value | printf \"%.2f\" }}/20."
+
+      - alert: LowAverageGrade
+        expr: students_average_grade < 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Moyenne generale inferieure a 10/20"
+          description: "Moyenne a {{ $value | printf \"%.2f\" }}/20, en dessous du seuil."
+
+      - alert: NoStudents
+        expr: students_total == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Base de donnees etudiants vide"
+          description: "Aucun etudiant enregistre en base."
+
+      - alert: BulkImportDetected
+        expr: increase(student_operations_total{operation="create"}[5m]) > 5
+        for: 0m
+        labels:
+          severity: info
+        annotations:
+          summary: "Import en lot detecte"
+          description: "{{ $value }} etudiants ajoutes en moins de 5 minutes (import Excel/CSV probable)."
+
+  - name: system_alerts
+    rules:
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - node_memory_MemAvailable_bytes/node_memory_MemTotal_bytes) * 100 > 85
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAM > 85%"
+          description: "Memoire systeme a {{ $value | printf \"%.1f\" }}%."
+
+      - alert: DiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Espace disque faible (<15%)"
+          description: "{{ $value | printf \"%.1f\" }}% d'espace disponible sur /."
