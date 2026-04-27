@@ -186,63 +186,39 @@ for m in ['http_requests_total','students_total','students_average_grade']:
     }
 }
 
-        stage('🚀 Deploy') {
+       stage('🚀 Deploy') {
+    steps {
+        sh """
+            echo "=== Deploiement ==="
+            IMAGE="devops-tp2-app:latest"
+            NETWORK="devops-tp2_devops-net"
+            VOLUME="devops-tp2_students_db"
 
-            steps {
+            docker stop flask-app 2>/dev/null || true
+            docker rm   flask-app 2>/dev/null || true
 
-                sh """
+            docker run -d \
+                --name flask-app \
+                --network \$NETWORK \
+                --restart unless-stopped \
+                -p 5000:5000 \
+                -v \$VOLUME:/data \
+                -e ENV=production \
+                --pull never \
+                \$IMAGE
 
-                    echo "=== Deploiement ==="
-
-                    docker stop flask-app 2>/dev/null || true
-
-                    docker rm   flask-app 2>/dev/null || true
-
-
-
-                    docker run -d \
-
-                        --name flask-app \
-
-                        --network devops-tp2_devops-net \
-
-                        --restart unless-stopped \
-
-                        -p 5000:5000 \
-
-                        -v devops-tp2_students_db:/data \
-
-                        -e ENV=production \
-
-                        --pull never \
-
-                        ${IMAGE_NAME}:latest
-
-
-
-                    echo "Attente health check..."
-
-                    for i in \$(seq 1 18); do
-
-                        STATUS=\$(docker inspect --format='{{.State.Health.Status}}' flask-app 2>/dev/null || echo starting)
-
-                        echo "  [\$i/18] \$STATUS"
-
-                        [ "\$STATUS" = "healthy" ] && break
-
-                        sleep 5
-
-                    done
-
-                    docker ps | grep flask-app
-
-                    echo "Deploiement OK"
-
-                """
-
-            }
-
-        }
+            echo "Attente health check..."
+            for i in \$(seq 1 18); do
+                STATUS=\$(docker inspect --format='{{.State.Health.Status}}' flask-app 2>/dev/null || echo starting)
+                echo "  [\$i/18] \$STATUS"
+                [ "\$STATUS" = "healthy" ] && break
+                sleep 5
+            done
+            docker ps | grep flask-app
+            echo "Deploiement OK"
+        """
+    }
+}
 
 
 
