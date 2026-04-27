@@ -122,15 +122,11 @@ pipeline {
         stage('🧪 Tests') {
     steps {
         sh """
-            mkdir -p /tmp/test-db-${BUILD_NUMBER}
-            chmod 777 /tmp/test-db-${BUILD_NUMBER}
+            IMAGE="devops-tp2-app:latest"
+            echo "=== Demarrage conteneur de test ==="
 
-            # Définir la variable explicitement dans le shell
-            IMAGE="${IMAGE_NAME}:latest"
-            echo "Image utilisee : \$IMAGE"
-
+            # PAS de volume monté → /data interne avec les bonnes permissions
             docker run -d --name test-app \
-                -v /tmp/test-db-${BUILD_NUMBER}:/data \
                 --pull never \
                 \$IMAGE
 
@@ -156,6 +152,7 @@ except:
                 [ \$i -eq 20 ] && docker logs test-app && exit 1
             done
 
+            echo "=== Test /health ==="
             docker exec test-app python3 -c "
 import urllib.request, json
 r = urllib.request.urlopen('http://localhost:5000/health', timeout=10)
@@ -163,6 +160,7 @@ d = json.loads(r.read())
 assert d['status'] == 'healthy'
 print('Health OK')
 "
+            echo "=== Test /api/students ==="
             docker exec test-app python3 -c "
 import urllib.request, json
 r = urllib.request.urlopen('http://localhost:5000/api/students', timeout=10)
@@ -170,6 +168,7 @@ d = json.loads(r.read())
 assert 'count' in d
 print('API OK -', d['count'], 'etudiants')
 "
+            echo "=== Test /metrics ==="
             docker exec test-app python3 -c "
 import urllib.request
 r = urllib.request.urlopen('http://localhost:5000/metrics', timeout=10)
@@ -182,10 +181,7 @@ for m in ['http_requests_total','students_total','students_average_grade']:
     }
     post {
         always {
-            sh """
-                docker rm -f test-app 2>/dev/null || true
-                rm -rf /tmp/test-db-${BUILD_NUMBER} 2>/dev/null || true
-            """
+            sh "docker rm -f test-app 2>/dev/null || true"
         }
     }
 }
