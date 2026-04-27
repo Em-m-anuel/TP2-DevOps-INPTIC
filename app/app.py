@@ -12,6 +12,37 @@ from flask import Flask, jsonify, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# ─── Configuration email ──────────────────────────────────────────────────────
+SMTP_HOST     = 'smtp.gmail.com'
+SMTP_PORT     = 587
+SMTP_USER     = 'bane16738@gmail.com'
+SMTP_PASSWORD = 'bsbegqjscrdblygc'
+NOTIFY_EMAIL  = 'bane16738@gmail.com'
+
+def send_email(subject: str, body: str):
+    """Envoie un email de notification. Silencieux si erreur."""
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = SMTP_USER
+        msg['To']      = NOTIFY_EMAIL
+        msg.attach(MIMEText(body, 'html'))
+
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASSWORD)
+            server.sendmail(SMTP_USER, NOTIFY_EMAIL, msg.as_string())
+
+        logger.info(f"Email envoye : {subject}")
+    except Exception as e:
+        logger.warning(f"Email non envoye : {e}")
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -138,7 +169,29 @@ def create_student():
     db.session.commit()
     STUDENT_OPS.labels(operation='create').inc()
     update_metrics()
+
+    # Notification email
+    send_email(
+        subject=f"[DevOps TP2] Nouvel etudiant ajoute : {s.prenom} {s.nom}",
+        body=f"""
+        <div style="font-family:Arial,sans-serif;padding:20px">
+          <h2 style="color:#38a169">Nouvel etudiant ajoute</h2>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="padding:8px;color:#666">Nom</td><td><b>{s.nom}</b></td></tr>
+            <tr><td style="padding:8px;color:#666">Prenom</td><td><b>{s.prenom}</b></td></tr>
+            <tr><td style="padding:8px;color:#666">Filiere</td><td><b>{s.filiere}</b></td></tr>
+            <tr><td style="padding:8px;color:#666">Note</td><td><b>{s.note}/20</b></td></tr>
+            <tr><td style="padding:8px;color:#666">ID</td><td><b>{s.id}</b></td></tr>
+          </table>
+          <p style="margin-top:16px">
+            <a href="http://192.168.47.10/students" style="background:#3182ce;color:white;padding:8px 16px;border-radius:4px;text-decoration:none">Voir les etudiants</a>
+          </p>
+          <p style="color:#aaa;font-size:12px;margin-top:16px">DevOps TP2 · INPTIC · LP-DAR 2026</p>
+        </div>
+        """
+    )
     return jsonify(s.to_dict()), 201
+
 
 @app.route('/api/students/<int:sid>', methods=['PUT'])
 def update_student(sid):
@@ -156,10 +209,28 @@ def update_student(sid):
 @app.route('/api/students/<int:sid>', methods=['DELETE'])
 def delete_student(sid):
     s = Student.query.get_or_404(sid)
+    nom, prenom, filiere, note = s.nom, s.prenom, s.filiere, s.note
     db.session.delete(s)
     db.session.commit()
     STUDENT_OPS.labels(operation='delete').inc()
     update_metrics()
+
+    # Notification email
+    send_email(
+        subject=f"[DevOps TP2] Etudiant supprime : {prenom} {nom}",
+        body=f"""
+        <div style="font-family:Arial,sans-serif;padding:20px">
+          <h2 style="color:#e53e3e">Etudiant supprime</h2>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="padding:8px;color:#666">Nom</td><td><b>{nom}</b></td></tr>
+            <tr><td style="padding:8px;color:#666">Prenom</td><td><b>{prenom}</b></td></tr>
+            <tr><td style="padding:8px;color:#666">Filiere</td><td><b>{filiere}</b></td></tr>
+            <tr><td style="padding:8px;color:#666">Note</td><td><b>{note}/20</b></td></tr>
+          </table>
+          <p style="color:#aaa;font-size:12px;margin-top:16px">DevOps TP2 · INPTIC · LP-DAR 2026</p>
+        </div>
+        """
+    )
     return jsonify({"message": "Supprime", "id": sid})
 
 @app.route('/api/stats')
@@ -284,5 +355,19 @@ def init_db():
                 db.session.add(s)
             db.session.commit()
             logger.info("Base initialisee avec %d etudiants", len(seeds))
+                    # Email de démarrage
+        total = Student.query.count()
+        send_email(
+            subject="[DevOps TP2] Application Flask demarree",
+            body=f"""
+            <div style="font-family:Arial,sans-serif;padding:20px">
+              <h2 style="color:#38a169">Application Flask operationnelle</h2>
+              <p>L'application vient de demarrer.</p>
+              <p>Etudiants en base : <b>{total}</b></p>
+              <p><a href="http://192.168.47.10" style="background:#3182ce;color:white;padding:8px 16px;border-radius:4px;text-decoration:none">Acceder a l'application</a></p>
+              <p style="color:#aaa;font-size:12px">DevOps TP2 · INPTIC · LP-DAR 2026</p>
+            </div>
+            """
+        )
 
 init_db()
