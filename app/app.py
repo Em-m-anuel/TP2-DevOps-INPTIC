@@ -270,9 +270,16 @@ def export_csv():
 def init_db():
     os.makedirs('/data', exist_ok=True)
     with app.app_context():
-        db.create_all()
+        db.create_all(checkfirst=True)  # ← ajouter checkfirst=True
+        if Student.query.count() == 0:
+            seeds = [
+                Student(nom="G",      prenom="DesmonD", filiere="LP-DAR",  note=15.5),
+                Student(nom="Camara", prenom="Ibrahim", filiere="LP-INFO", note=13.5),
+                Student(nom="Bah",    prenom="Mariama", filiere="LP-DAR",  note=17.0),
+                Student(nom="Diallo", prenom="Aissatou",filiere="LP-INFO", note=11.5),
+            ]
+            for s in seeds: db.session.add(s)
+            db.session.commit()
+            logger.info("Base initialisee avec %d etudiants", len(seeds))
 
 init_db()
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
