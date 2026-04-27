@@ -120,138 +120,75 @@ pipeline {
 
 
         stage('🧪 Tests') {
+    steps {
+        sh """
+            mkdir -p /tmp/test-db-${BUILD_NUMBER}
+            chmod 777 /tmp/test-db-${BUILD_NUMBER}
 
-            steps {
+            # Définir la variable explicitement dans le shell
+            IMAGE="${IMAGE_NAME}:latest"
+            echo "Image utilisee : \$IMAGE"
 
-                sh """
+            docker run -d --name test-app \
+                -v /tmp/test-db-${BUILD_NUMBER}:/data \
+                --pull never \
+                \$IMAGE
 
-                    mkdir -p /tmp/test-db-${BUILD_NUMBER}
-
-                    chmod 777 /tmp/test-db-${BUILD_NUMBER}
-
-
-
-                    docker run -d --name test-app \
-
-                        -v /tmp/test-db-${BUILD_NUMBER}:/data \
-
-                        --pull never \
-
-                        ${IMAGE_NAME}:latest
-
-
-
-                    echo "Attente demarrage..."
-
-                    for i in \$(seq 1 20); do
-
-                        sleep 3
-
-                        STATUS=\$(docker inspect -f '{{.State.Running}}' test-app 2>/dev/null || echo false)
-
-                        if [ "\$STATUS" != "true" ]; then
-
-                            echo "Conteneur crashe. Logs :"
-
-                            docker logs test-app
-
-                            exit 1
-
-                        fi
-
-                        READY=\$(docker exec test-app python3 -c "
-
+            echo "Attente demarrage..."
+            for i in \$(seq 1 20); do
+                sleep 3
+                STATUS=\$(docker inspect -f '{{.State.Running}}' test-app 2>/dev/null || echo false)
+                if [ "\$STATUS" != "true" ]; then
+                    echo "Conteneur crashe. Logs :"
+                    docker logs test-app
+                    exit 1
+                fi
+                READY=\$(docker exec test-app python3 -c "
 import urllib.request
-
 try:
-
     urllib.request.urlopen('http://localhost:5000/health', timeout=2)
-
     print('ready')
-
 except:
-
     print('waiting')
-
 " 2>/dev/null || echo waiting)
+                echo "  [\$i/20] \$READY"
+                [ "\$READY" = "ready" ] && break
+                [ \$i -eq 20 ] && docker logs test-app && exit 1
+            done
 
-                        echo "  [\$i/20] \$READY"
-
-                        [ "\$READY" = "ready" ] && break
-
-                        [ \$i -eq 20 ] && docker logs test-app && exit 1
-
-                    done
-
-
-
-                    docker exec test-app python3 -c "
-
+            docker exec test-app python3 -c "
 import urllib.request, json
-
 r = urllib.request.urlopen('http://localhost:5000/health', timeout=10)
-
 d = json.loads(r.read())
-
 assert d['status'] == 'healthy'
-
 print('Health OK')
-
 "
-
-                    docker exec test-app python3 -c "
-
+            docker exec test-app python3 -c "
 import urllib.request, json
-
 r = urllib.request.urlopen('http://localhost:5000/api/students', timeout=10)
-
 d = json.loads(r.read())
-
 assert 'count' in d
-
 print('API OK -', d['count'], 'etudiants')
-
 "
-
-                    docker exec test-app python3 -c "
-
+            docker exec test-app python3 -c "
 import urllib.request
-
 r = urllib.request.urlopen('http://localhost:5000/metrics', timeout=10)
-
 c = r.read().decode()
-
 for m in ['http_requests_total','students_total','students_average_grade']:
-
     assert m in c, f'{m} manquant'
-
     print('Metrique OK:', m)
-
 "
-
-                """
-
-            }
-
-            post {
-
-                always {
-
-                    sh """
-
-                        docker rm -f test-app 2>/dev/null || true
-
-                        rm -rf /tmp/test-db-${BUILD_NUMBER} 2>/dev/null || true
-
-                    """
-
-                }
-
-            }
-
+        """
+    }
+    post {
+        always {
+            sh """
+                docker rm -f test-app 2>/dev/null || true
+                rm -rf /tmp/test-db-${BUILD_NUMBER} 2>/dev/null || true
+            """
         }
-
-
+    }
+}
 
         stage('🚀 Deploy') {
 
