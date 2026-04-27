@@ -270,8 +270,9 @@ def export_csv():
 def init_db():
     os.makedirs('/data', exist_ok=True)
     with app.app_context():
-        # Flask-SQLAlchemy 3.x : utiliser metadata directement avec checkfirst
-        db.metadata.create_all(bind=db.engine, checkfirst=True)
+        # SQLAlchemy 2.x correct syntax
+        with db.engine.begin() as conn:
+            db.metadata.create_all(conn, checkfirst=True)
         if Student.query.count() == 0:
             seeds = [
                 Student(nom="G",      prenom="DesmonD", filiere="LP-DAR",  note=15.5),
