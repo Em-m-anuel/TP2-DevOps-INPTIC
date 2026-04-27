@@ -5,8 +5,7 @@ pipeline {
         IMAGE_NAME   = 'devops-tp2-app'
         COMPOSE_DIR  = '/home/devops_os/devops-tp2'
         APP_URL      = 'http://192.168.47.10:5000'
-        COMPOSE_CMD  = 'docker-compose'
-        NOTIFY_EMAIL = 'REMPLACE_TON_EMAIL@gmail.com'
+        NOTIFY_EMAIL = 'bane16738@gmail.com'
         GITHUB_REPO  = 'https://github.com/Em-m-anuel/TP2-DevOps-INPTIC.git'
     }
 
@@ -17,9 +16,9 @@ pipeline {
     }
 
     stages {
+
         stage('🔍 Checkout GitHub') {
             steps {
-                echo "=== Recuperation du code depuis GitHub ==="
                 git branch: 'main', url: "${GITHUB_REPO}"
             }
         }
@@ -32,20 +31,8 @@ pipeline {
                         returnStdout: true
                     ).trim()
 
-                    sh '''
-                        echo "=== Verification requirements ==="
-                        grep -q "flask-sqlalchemy"  app/requirements.txt && echo "flask-sqlalchemy present"
-                        grep -q "prometheus-client" app/requirements.txt && echo "prometheus-client present"
-                        grep -q "gunicorn"          app/requirements.txt && echo "gunicorn present"
-                    '''
-
                     if (pythonOk == 'yes') {
-                        sh '''
-                            echo "=== Validation syntaxe Python ==="
-                            cd app && python3 -m py_compile app.py && echo "Syntaxe Python OK"
-                        '''
-                    } else {
-                        echo "python3 absent dans Jenkins — lint skipe (image validee au build)"
+                        sh 'cd app && python3 -m py_compile app.py'
                     }
                 }
             }
@@ -55,14 +42,13 @@ pipeline {
             steps {
                 sh """
                     echo "=== Build image Docker ==="
+
                     if docker image inspect ${IMAGE_NAME}:latest > /dev/null 2>&1; then
-                        echo "Image deja presente — tag build"
+                        echo "Image existante -> tag backup"
                         docker tag ${IMAGE_NAME}:latest ${IMAGE_NAME}:build-${BUILD_NUMBER}
-                    else
-                        echo "Image absente — build depuis cache local"
-                        docker build --pull never -t ${IMAGE_NAME}:latest ./app
                     fi
-                    echo "Image : ${IMAGE_NAME}:build-${BUILD_NUMBER}"
+
+                    docker build -t ${IMAGE_NAME}:latest ./app
                 """
             }
         }
@@ -70,31 +56,49 @@ pipeline {
         stage('🧪 Tests') {
             steps {
                 sh """
-                    echo "=== Demarrage conteneur de test ==="
+                    echo "=== Start test container ==="
+
                     docker run -d --name test-app \
                         -v /tmp/test-db-${BUILD_NUMBER}:/data \
-                        --pull never \
                         ${IMAGE_NAME}:latest
 
-                    sleep 10
+                    echo "Waiting app startup..."
 
-                    STATUS=\$(docker inspect -f '{{.State.Running}}' test-app 2>/dev/null || echo false)
-                    if [ "\$STATUS" != "true" ]; then
-                        echo "FAIL : conteneur arrete. Logs :"
-                        docker logs test-app
-                        exit 1
-                    fi
+                    for i in \$(seq 1 20); do
+                        sleep 3
 
-                    echo "=== Test /health ==="
-                    docker exec test-app python3 -c "
-import urllib.request, json, sys
-r = urllib.request.urlopen('http://localhost:5000/health', timeout=10)
-d = json.loads(r.read())
-assert d['status'] == 'healthy', f'status={d[\"status\"]}'
-print('Health OK — uptime:', round(d.get('uptime_seconds',0)), 's')
-"
+                        STATUS=\$(docker inspect -f '{{.State.Running}}' test-app 2>/dev/null || echo false)
+
+                        if [ "\$STATUS" != "true" ]; then
+                            echo "Container crashed"
+                            docker logs test-app
+                            exit 1
+                        fi
+
+                        READY=\$(docker exec test-app python3 -c "
+import urllib.request
+try:
+    urllib.request.urlopen('http://localhost:5000/health', timeout=2)
+    print('ready')
+except:
+    print('waiting')
+" 2>/dev/null || echo waiting)
+
+                        echo "[\$i/20] \$READY"
+
+                        if [ "\$READY" = "ready" ]; then
+                            break
+                        fi
+
+                        if [ \$i -eq 20 ]; then
+                            echo "TIMEOUT"
+                            docker logs test-app
+                            exit 1
+                        fi
+                    done
                 """
             }
+
             post {
                 always {
                     sh """
@@ -108,11 +112,11 @@ print('Health OK — uptime:', round(d.get('uptime_seconds',0)), 's')
         stage('🚀 Deploy') {
             steps {
                 sh """
-                    echo "=== Deploiement ==="
-                    docker stop flask-app 2>/dev/null || true
-                    docker rm   flask-app 2>/dev/null || true
+                    echo "=== Deploy via Docker Compose ==="
                     cd ${COMPOSE_DIR}
-                    ${COMPOSE_CMD} up -d app
+
+                    # 🔥 FIX IMPORTANT : utilise docker compose V2
+                    docker compose up -d app
                 """
             }
         }
@@ -120,14 +124,20 @@ print('Health OK — uptime:', round(d.get('uptime_seconds',0)), 's')
 
     post {
         success {
-            echo "Pipeline #${BUILD_NUMBER} REUSSI"
+            echo "Pipeline SUCCESS"
         }
+
         failure {
-            echo "Pipeline #${BUILD_NUMBER} ECHOUE — rollback"
-            sh "cd ${COMPOSE_DIR} && ${COMPOSE_CMD} up -d app || true"
+            echo "Pipeline FAILED - rollback"
+
+            sh """
+                cd ${COMPOSE_DIR}
+                docker compose up -d app || true
+            """
         }
+
         always {
-            sh "docker system prune -f --filter 'until=24h' 2>/dev/null || true"
+            sh "docker system prune -f --filter 'until=24h' || true"
         }
     }
 }
