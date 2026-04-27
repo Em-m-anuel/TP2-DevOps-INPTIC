@@ -123,9 +123,12 @@ pipeline {
     steps {
         sh """
             IMAGE="devops-tp2-app:latest"
-            echo "=== Demarrage conteneur de test ==="
 
-            # PAS de volume monté → /data interne avec les bonnes permissions
+            # Nettoyer les volumes anonymes orphelins du build precedent
+            docker rm -f test-app 2>/dev/null || true
+            docker volume prune -f 2>/dev/null || true
+
+            echo "=== Demarrage conteneur de test ==="
             docker run -d --name test-app \
                 --pull never \
                 \$IMAGE
@@ -152,7 +155,6 @@ except:
                 [ \$i -eq 20 ] && docker logs test-app && exit 1
             done
 
-            echo "=== Test /health ==="
             docker exec test-app python3 -c "
 import urllib.request, json
 r = urllib.request.urlopen('http://localhost:5000/health', timeout=10)
@@ -160,7 +162,6 @@ d = json.loads(r.read())
 assert d['status'] == 'healthy'
 print('Health OK')
 "
-            echo "=== Test /api/students ==="
             docker exec test-app python3 -c "
 import urllib.request, json
 r = urllib.request.urlopen('http://localhost:5000/api/students', timeout=10)
@@ -168,7 +169,6 @@ d = json.loads(r.read())
 assert 'count' in d
 print('API OK -', d['count'], 'etudiants')
 "
-            echo "=== Test /metrics ==="
             docker exec test-app python3 -c "
 import urllib.request
 r = urllib.request.urlopen('http://localhost:5000/metrics', timeout=10)
