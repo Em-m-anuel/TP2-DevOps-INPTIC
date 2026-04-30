@@ -12,7 +12,6 @@ from flask import Flask, jsonify, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
-
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -170,7 +169,6 @@ def create_student():
     STUDENT_OPS.labels(operation='create').inc()
     update_metrics()
 
-    # Notification email
     send_email(
         subject=f"[DevOps TP2] Nouvel etudiant ajoute : {s.prenom} {s.nom}",
         body=f"""
@@ -191,7 +189,6 @@ def create_student():
         """
     )
     return jsonify(s.to_dict()), 201
-
 
 @app.route('/api/students/<int:sid>', methods=['PUT'])
 def update_student(sid):
@@ -215,7 +212,6 @@ def delete_student(sid):
     STUDENT_OPS.labels(operation='delete').inc()
     update_metrics()
 
-    # Notification email
     send_email(
         subject=f"[DevOps TP2] Etudiant supprime : {prenom} {nom}",
         body=f"""
@@ -341,9 +337,16 @@ def export_csv():
 def init_db():
     os.makedirs('/data', exist_ok=True)
     with app.app_context():
-        # SQLAlchemy 2.x correct syntax
-        with db.engine.begin() as conn:
-            db.metadata.create_all(conn, checkfirst=True)
+        try:
+            db.metadata.create_all(db.engine)
+            logger.info("Tables creees ou deja existantes")
+        except Exception as e:
+            if "already exists" in str(e):
+                logger.info("Tables deja existantes - OK")
+            else:
+                logger.error(f"Erreur init DB : {e}")
+                raise
+
         if Student.query.count() == 0:
             seeds = [
                 Student(nom="G",      prenom="DesmonD", filiere="LP-DAR",  note=15.5),
@@ -355,17 +358,15 @@ def init_db():
                 db.session.add(s)
             db.session.commit()
             logger.info("Base initialisee avec %d etudiants", len(seeds))
-                    # Email de démarrage
+
         total = Student.query.count()
         send_email(
             subject="[DevOps TP2] Application Flask demarree",
             body=f"""
             <div style="font-family:Arial,sans-serif;padding:20px">
               <h2 style="color:#38a169">Application Flask operationnelle</h2>
-              <p>L'application vient de demarrer.</p>
               <p>Etudiants en base : <b>{total}</b></p>
-              <p><a href="http://192.168.47.10" style="background:#3182ce;color:white;padding:8px 16px;border-radius:4px;text-decoration:none">Acceder a l'application</a></p>
-              <p style="color:#aaa;font-size:12px">DevOps TP2 · INPTIC · LP-DAR 2026</p>
+              <p><a href="http://192.168.47.10" style="background:#3182ce;color:white;padding:8px 16px;border-radius:4px;text-decoration:none">Acceder</a></p>
             </div>
             """
         )
